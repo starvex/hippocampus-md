@@ -1,0 +1,19 @@
+{
+  "decayRates": {
+    "decision": 0.03,
+    "user_intent": 0.05,
+    "context": 0.12,
+    "tool_result": 0.20,
+    "ephemeral": 0.35,
+    "unknown": 0.15
+  },
+  "sparseThreshold": 0.25,
+  "compressThreshold": 0.65,
+  "retentionFloor": {
+    "decision": 0.50,
+    "user_intent": 0.35
+  },
+  "maxSparseIndexTokens": 2500,
+  "debug": false,
+  "logFile": ".pi/hippocampus.log"
+}
