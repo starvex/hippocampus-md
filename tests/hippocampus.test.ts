@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { readFileSync, existsSync } from 'node:fs'
+import { describe, it, expect, vi } from 'vitest'
 import {
   classifyMessage,
   getBaseImportance,
@@ -9,8 +8,6 @@ import {
   calculateRetention,
   scoreMessages,
   buildSparseIndexLine,
-  buildHippocampusSummary,
-  loadConfig,
   extractContent,
   DEFAULT_CONFIG,
   type EntryType,

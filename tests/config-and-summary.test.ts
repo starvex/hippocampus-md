@@ -3,7 +3,6 @@ import { readFileSync, existsSync } from 'node:fs'
 import {
   loadConfig,
   buildHippocampusSummary,
-  scoreMessages,
   DEFAULT_CONFIG,
   type HippocampusConfig,
   type CompactionMessage,

@@ -1,12 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { readFileSync, existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import {
   scoreMessages,
   buildHippocampusSummary,
   loadConfig,
-  DEFAULT_CONFIG,
-  type CompactionMessage,
-  type HippocampusConfig
+  type CompactionMessage
 } from '../extension/hippocampus'
 
 // Mock fs operations
@@ -318,9 +316,6 @@ export default App;`
 
     // Check that we have proper distribution across retention categories
     const highRetention = scored.filter(e => e.retention >= config.compressThreshold)
-    const midRetention = scored.filter(e => 
-      e.retention >= config.sparseThreshold && e.retention < config.compressThreshold
-    )
     const lowRetention = scored.filter(e => e.retention < config.sparseThreshold)
 
     // Should have some entries in each category
@@ -439,10 +434,9 @@ export default App;`
 
     const config = loadConfig('/workspace')
     const scored = scoreMessages(messages, config)
-    const summary = buildHippocampusSummary(scored, messages, config)
+    buildHippocampusSummary(scored, messages, config)
 
-    // With custom config (very low sparse threshold), should have some distribution
-    const sparseCount = scored.filter(e => e.retention < config.sparseThreshold).length
+    // With custom config, should have some entries
     expect(scored.length).toBeGreaterThan(0) // At least we have entries
     // Since sparseThreshold is 0.1, most entries might not reach sparse level
 
