@@ -1,0 +1,46 @@
+{
+  "name": "hippocampus-md",
+  "version": "0.1.0",
+  "description": "Context Lifecycle Extension for Pi/OpenClaw - hippocampal memory systems for AI agents",
+  "type": "module",
+  "main": "extension/hippocampus.ts",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint extension/ tests/ --ext .ts",
+    "build": "tsc"
+  },
+  "keywords": [
+    "ai",
+    "memory",
+    "context",
+    "hippocampus",
+    "pi",
+    "openclaw",
+    "compaction",
+    "decay"
+  ],
+  "author": "Roman Godz, R2D2",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/starvex/hippocampus-md.git"
+  },
+  "homepage": "https://hippocampus.md",
+  "devDependencies": {
+    "@types/node": "^20.11.16",
+    "@typescript-eslint/eslint-plugin": "^6.19.1",
+    "@typescript-eslint/parser": "^6.19.1",
+    "@vitest/coverage-v8": "^1.2.2",
+    "@vitest/ui": "^1.2.2",
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

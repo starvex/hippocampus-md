@@ -26,7 +26,7 @@
  *   Create hippocampus.config.json in your workspace root (optional)
  */
 
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI, CompactionEvent, ExtensionContext, CompactionResult } from "@mariozechner/pi-coding-agent";
 import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -584,7 +584,7 @@ export default function hippocampus(pi: ExtensionAPI): void {
   log("🧠 hippocampus.md extension loaded", { config: { ...config, decayRates: "..." } });
 
   // ── Hook: session_before_compact ──
-  pi.on("session_before_compact", async (event, ctx) => {
+  pi.on("session_before_compact", async (event: CompactionEvent, ctx: ExtensionContext): Promise<CompactionResult | void> => {
     const { preparation } = event;
     const {
       messagesToSummarize,
@@ -654,9 +654,38 @@ export default function hippocampus(pi: ExtensionAPI): void {
   });
 
   // ── Hook: turn_end ──
-  pi.on("turn_end", (_event, _ctx) => {
+  pi.on("turn_end", (_event: any, _ctx: ExtensionContext) => {
     // Future: Track which entries the agent actually referenced
     // and boost their importance scores for next compaction
     log("📍 Turn ended — scoring update (future: track references)");
   });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EXPORTS FOR TESTING
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** @internal */
+export {
+  classifyMessage,
+  getBaseImportance,
+  estimateTokens,
+  extractPreview,
+  extractToolName,
+  calculateRetention,
+  scoreMessages,
+  buildSparseIndexLine,
+  buildHippocampusSummary,
+  loadConfig,
+  extractContent,
+  DEFAULT_CONFIG
+}
+
+/** @internal */
+export type {
+  EntryType,
+  HippocampusConfig,
+  ScoredEntry,
+  CompactionMessage,
+  ContentBlock
 }
