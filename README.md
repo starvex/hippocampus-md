@@ -1,5 +1,6 @@
 # hippocampus.md
 
+[![Website](https://img.shields.io/badge/Website-hippocampus.md-00ff88)](https://hippocampus.md)
 [![Part of the Agent Brain Architecture](https://img.shields.io/badge/part_of-Agent_Brain_Architecture-blue)](https://github.com/starvex/agent-brain-architecture)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 

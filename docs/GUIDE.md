@@ -1,5 +1,7 @@
 # Getting Started with hippocampus.md
 
+> 🌐 **Website**: [hippocampus.md](https://hippocampus.md) — Full documentation, whitepaper, and protocol spec
+
 This guide will walk you through setting up and tuning hippocampus.md for optimal context lifecycle management.
 
 ## Prerequisites
