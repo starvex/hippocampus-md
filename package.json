@@ -3,15 +3,26 @@
   "version": "0.1.0",
   "description": "Context Lifecycle Extension for Pi/OpenClaw - hippocampal memory systems for AI agents",
   "type": "module",
-  "main": "extension/hippocampus.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "hippocampus-md": "./dist/bin/cli.js"
+  },
+  "files": [
+    "dist",
+    "extension",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint extension/ tests/ --ext .ts",
-    "build": "tsc"
+    "lint": "eslint extension/ tests/ bin/ --ext .ts"
   },
   "keywords": [
     "ai",
@@ -21,15 +32,20 @@
     "pi",
     "openclaw",
     "compaction",
-    "decay"
+    "decay",
+    "agent",
+    "llm"
   ],
-  "author": "Roman Godz, R2D2",
+  "author": "Roman Godz <romangodz@gmail.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/starvex/hippocampus-md.git"
   },
   "homepage": "https://hippocampus.md",
+  "bugs": {
+    "url": "https://github.com/starvex/hippocampus-md/issues"
+  },
   "devDependencies": {
     "@types/node": "^20.11.16",
     "@typescript-eslint/eslint-plugin": "^6.19.1",
