@@ -1,6 +1,6 @@
 {
   "name": "hippocampus-md",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Context Lifecycle Extension for Pi/OpenClaw - hippocampal memory systems for AI agents",
   "type": "module",
   "main": "dist/index.js",
