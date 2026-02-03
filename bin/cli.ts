@@ -57,7 +57,8 @@ async function init() {
 
   // Step 2: Copy hippocampus.ts
   logStep('Installing hippocampus extension...');
-  const sourceFile = join(__dirname, '..', 'extension', 'hippocampus.ts');
+  // __dirname is dist/bin/, so go up two levels to reach package root
+  const sourceFile = join(__dirname, '..', '..', 'extension', 'hippocampus.ts');
   const destFile = join(piExtensionsDir, 'hippocampus.ts');
 
   if (!existsSync(sourceFile)) {
