@@ -37,20 +37,67 @@ function logError(msg: string) {
   log(`  ✗ ${msg}`, COLORS.red);
 }
 
+interface Platform {
+  name: string;
+  baseDir: string;
+  extensionsDir: string;
+  configName: string;
+}
+
+function detectPlatform(): Platform {
+  const home = homedir();
+  
+  // Check for Clawdbot/Moltbot first (most specific)
+  const clawdbotDir = join(home, '.clawdbot');
+  if (existsSync(clawdbotDir)) {
+    return {
+      name: 'Clawdbot',
+      baseDir: clawdbotDir,
+      extensionsDir: join(clawdbotDir, 'extensions'),
+      configName: 'clawdbot.json',
+    };
+  }
+  
+  // Check for OpenClaw
+  const openclawDir = join(home, '.openclaw');
+  if (existsSync(openclawDir)) {
+    return {
+      name: 'OpenClaw',
+      baseDir: openclawDir,
+      extensionsDir: join(openclawDir, 'extensions'),
+      configName: 'openclaw.json',
+    };
+  }
+  
+  // Default to Pi
+  const piDir = join(home, '.pi');
+  return {
+    name: 'Pi',
+    baseDir: piDir,
+    extensionsDir: join(piDir, 'extensions'),
+    configName: 'config.json',
+  };
+}
+
 async function init() {
   console.log('');
   log('🧠 hippocampus.md - Context Lifecycle Extension', COLORS.cyan);
   log('   Memory that decays like biology', COLORS.dim);
   console.log('');
 
-  const piExtensionsDir = join(homedir(), '.pi', 'extensions');
-  const configPath = join(homedir(), '.pi', 'hippocampus.config.json');
+  // Auto-detect platform
+  const platform = detectPlatform();
+  logStep(`Detected platform: ${platform.name}`);
+  logSuccess(`Using ${platform.baseDir}`);
+  
+  const extensionsDir = platform.extensionsDir;
+  const configPath = join(platform.baseDir, 'hippocampus.config.json');
 
-  // Step 1: Create .pi/extensions directory if needed
-  logStep('Checking Pi extensions directory...');
-  if (!existsSync(piExtensionsDir)) {
-    mkdirSync(piExtensionsDir, { recursive: true });
-    logSuccess(`Created ${piExtensionsDir}`);
+  // Step 1: Create extensions directory if needed
+  logStep('Checking extensions directory...');
+  if (!existsSync(extensionsDir)) {
+    mkdirSync(extensionsDir, { recursive: true });
+    logSuccess(`Created ${extensionsDir}`);
   } else {
     logSuccess('Extensions directory exists');
   }
@@ -59,7 +106,7 @@ async function init() {
   logStep('Installing hippocampus extension...');
   // __dirname is dist/bin/, so go up two levels to reach package root
   const sourceFile = join(__dirname, '..', '..', 'extension', 'hippocampus.ts');
-  const destFile = join(piExtensionsDir, 'hippocampus.ts');
+  const destFile = join(extensionsDir, 'hippocampus.ts');
 
   if (!existsSync(sourceFile)) {
     logError(`Source file not found: ${sourceFile}`);
@@ -95,7 +142,7 @@ async function init() {
       },
       sparseIndex: {
         enabled: true,
-        path: join(homedir(), '.pi', 'hippocampus-index.json'),
+        path: join(platform.baseDir, 'hippocampus-index.json'),
       },
     };
     writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2));
@@ -104,11 +151,12 @@ async function init() {
     logSuccess('Config already exists');
   }
 
-  // Step 4: Remind about Pi config
+  // Step 4: Remind about platform config
   console.log('');
-  log('📋 Final step - Update your Pi config:', COLORS.yellow);
+  log('📋 Final step - Update your config:', COLORS.yellow);
   console.log('');
-  log('   In ~/.pi/config.json, set:', COLORS.dim);
+  const mainConfigPath = join(platform.baseDir, platform.configName);
+  log(`   In ${mainConfigPath}, set:`, COLORS.dim);
   log('   {', COLORS.dim);
   log('     "compaction": {', COLORS.dim);
   log('       "mode": "default"  // not "safeguard"', COLORS.dim);
@@ -127,16 +175,21 @@ async function status() {
   log('🧠 hippocampus.md status', COLORS.cyan);
   console.log('');
 
-  const extensionPath = join(homedir(), '.pi', 'extensions', 'hippocampus.ts');
-  const configPath = join(homedir(), '.pi', 'hippocampus.config.json');
-  const indexPath = join(homedir(), '.pi', 'hippocampus-index.json');
+  // Auto-detect platform
+  const platform = detectPlatform();
+  log(`  Platform: ${platform.name}`, COLORS.dim);
+  console.log('');
+
+  const extensionPath = join(platform.extensionsDir, 'hippocampus.ts');
+  const configPath = join(platform.baseDir, 'hippocampus.config.json');
+  const indexPath = join(platform.baseDir, 'hippocampus-index.json');
   const logPath = '/tmp/hippocampus-debug.log';
 
   // Check extension
   if (existsSync(extensionPath)) {
     logSuccess(`Extension installed: ${extensionPath}`);
   } else {
-    logError('Extension not installed');
+    logError(`Extension not installed at ${extensionPath}`);
   }
 
   // Check config
@@ -151,6 +204,22 @@ async function status() {
     }
   } else {
     logWarning('No config file (using defaults)');
+  }
+
+  // Check main platform config for compaction mode
+  const mainConfigPath = join(platform.baseDir, platform.configName);
+  if (existsSync(mainConfigPath)) {
+    try {
+      const mainConfig = JSON.parse(readFileSync(mainConfigPath, 'utf-8'));
+      const mode = mainConfig?.compaction?.mode || 'unknown';
+      if (mode === 'default') {
+        logSuccess(`Compaction mode: ${mode} ✓`);
+      } else {
+        logWarning(`Compaction mode: ${mode} (needs "default" for hippocampus to work)`);
+      }
+    } catch {
+      logWarning('Could not read main config');
+    }
   }
 
   // Check sparse index
@@ -196,9 +265,14 @@ async function main() {
 🧠 hippocampus.md - Context Lifecycle Extension
 
 Usage:
-  npx hippocampus-md init     Install extension to ~/.pi/extensions/
+  npx hippocampus-md init     Install extension (auto-detects Pi/OpenClaw/Clawdbot)
   npx hippocampus-md status   Check installation status
   npx hippocampus-md help     Show this help
+
+Supported platforms:
+  • Pi (~/.pi/)
+  • OpenClaw (~/.openclaw/)
+  • Clawdbot (~/.clawdbot/)
 
 Docs: https://hippocampus.md
 GitHub: https://github.com/starvex/hippocampus-md
