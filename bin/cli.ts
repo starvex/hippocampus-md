@@ -207,13 +207,21 @@ async function status() {
   }
 
   // Check main platform config for compaction mode
+  // OpenClaw/Clawdbot may have it in agents.defaults.compaction.mode or root compaction.mode
   const mainConfigPath = join(platform.baseDir, platform.configName);
   if (existsSync(mainConfigPath)) {
     try {
       const mainConfig = JSON.parse(readFileSync(mainConfigPath, 'utf-8'));
-      const mode = mainConfig?.compaction?.mode || 'unknown';
+      // Check multiple possible locations for compaction mode
+      const mode = 
+        mainConfig?.compaction?.mode ||
+        mainConfig?.agents?.defaults?.compaction?.mode ||
+        mainConfig?.agent?.compaction?.mode ||
+        'unknown';
       if (mode === 'default') {
         logSuccess(`Compaction mode: ${mode} ✓`);
+      } else if (mode === 'unknown') {
+        log('  ○ Compaction mode not set (extension may still work)', COLORS.dim);
       } else {
         logWarning(`Compaction mode: ${mode} (needs "default" for hippocampus to work)`);
       }
