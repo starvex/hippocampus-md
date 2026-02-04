@@ -299,7 +299,7 @@ function classifyEntry(text: string): string {
   return 'context';
 }
 
-function calculateRetention(importance: number, age: number, type: string, sparseThreshold: number): number {
+function calculateRetention(importance: number, age: number, type: string, _sparseThreshold: number): number {
   const lambda = DEFAULT_DECAY_RATES[type] || 0.15;
   const floor = type === 'decision' ? 0.50 : type === 'user_intent' ? 0.35 : 0;
   const raw = importance * Math.exp(-lambda * age);
