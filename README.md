@@ -23,12 +23,24 @@ Traditional AI context management treats all information equally — keeping eve
 # Install globally
 npm install -g hippocampus-md
 
-# Initialize (copies extension to ~/.pi/extensions/)
+# Initialize (auto-detects Pi/OpenClaw/Clawdbot)
 npx hippocampus-md init
 
 # Check status
 npx hippocampus-md status
+
+# Score a memory file
+npx hippocampus-md score memory/2026-02-03.md
 ```
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `init` | Install extension (auto-detects platform) |
+| `status` | Check installation and config |
+| `score <file>` | Score a markdown memory file |
+| `help` | Show available commands |
 
 ## Manual Installation
 

@@ -246,6 +246,166 @@ async function status() {
   console.log('');
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// SCORE COMMAND
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const DEFAULT_DECAY_RATES: Record<string, number> = {
+  decision: 0.03,
+  user_intent: 0.05,
+  context: 0.12,
+  tool_result: 0.20,
+  ephemeral: 0.35,
+  unknown: 0.15,
+};
+
+const DEFAULT_IMPORTANCE: Record<string, number> = {
+  decision: 0.90,
+  user_intent: 0.80,
+  context: 0.50,
+  tool_result: 0.30,
+  ephemeral: 0.10,
+  unknown: 0.40,
+};
+
+function hashContent(str: string): string {
+  let hash = 5381;
+  for (let i = 0; i < Math.min(str.length, 500); i++) {
+    hash = ((hash << 5) + hash) ^ str.charCodeAt(i);
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
+}
+
+function classifyEntry(text: string): string {
+  const lower = text.toLowerCase();
+  
+  // Check for explicit hippocampus tags
+  const tagMatch = text.match(/<!--\s*hippocampus:\s*type=(\w+)/);
+  if (tagMatch) return tagMatch[1];
+  
+  // Decision markers
+  const decisionMarkers = ['decided', 'decision', 'will do', 'plan:', 'approach:', 'решил', 'решение', 'план:', '✅', '→'];
+  if (decisionMarkers.some(m => lower.includes(m))) return 'decision';
+  
+  // User intent
+  if (lower.includes('user wants') || lower.includes('roman wants') || lower.includes('requested')) return 'user_intent';
+  
+  // Tool output
+  if (lower.includes('```') || lower.includes('output:') || lower.includes('error:')) return 'tool_result';
+  
+  // Ephemeral
+  if (lower.includes('heartbeat') || lower.includes('no changes') || lower.length < 50) return 'ephemeral';
+  
+  return 'context';
+}
+
+function calculateRetention(importance: number, age: number, type: string, sparseThreshold: number): number {
+  const lambda = DEFAULT_DECAY_RATES[type] || 0.15;
+  const floor = type === 'decision' ? 0.50 : type === 'user_intent' ? 0.35 : 0;
+  const raw = importance * Math.exp(-lambda * age);
+  return Math.max(floor, raw);
+}
+
+function parseMarkdownEntries(content: string): Array<{ text: string; explicitScore: number | null; tokens: number }> {
+  const entries: Array<{ text: string; explicitScore: number | null; tokens: number }> = [];
+  const sections = content.split(/\n(?=##?\s)|(?:\n\n)+/);
+  
+  for (const section of sections) {
+    const text = section.trim();
+    if (!text || (text.startsWith('<!--') && text.endsWith('-->'))) continue;
+    
+    const scoreMatch = text.match(/<!--\s*hippocampus:.*?score=([\d.]+)/);
+    const explicitScore = scoreMatch ? parseFloat(scoreMatch[1]) : null;
+    
+    entries.push({ text, explicitScore, tokens: Math.ceil(text.length / 4) });
+  }
+  
+  return entries;
+}
+
+interface ScoredItem {
+  t: number;
+  type: string;
+  score: number;
+  hash: string;
+  summary: string;
+  tokens: number;
+}
+
+async function score(filePath: string) {
+  log('🧠 hippocampus.md - Memory Scoring', COLORS.cyan);
+  console.log('');
+  
+  const resolvedPath = join(process.cwd(), filePath);
+  
+  if (!existsSync(resolvedPath)) {
+    logError(`File not found: ${resolvedPath}`);
+    process.exit(1);
+  }
+  
+  logStep(`Scoring: ${resolvedPath}`);
+  
+  const content = readFileSync(resolvedPath, 'utf-8');
+  const entries = parseMarkdownEntries(content);
+  const total = entries.length;
+  
+  const sparseThreshold = 0.25;
+  const compressThreshold = 0.65;
+  
+  const scored: ScoredItem[] = entries.map((entry, index) => {
+    const type = classifyEntry(entry.text);
+    const age = total - 1 - index;
+    let importance = DEFAULT_IMPORTANCE[type] || 0.40;
+    
+    // Size penalty
+    if (entry.tokens > 1000) importance = Math.max(0.1, importance - 0.15);
+    
+    const retention = entry.explicitScore !== null 
+      ? entry.explicitScore 
+      : calculateRetention(importance, age, type, sparseThreshold);
+    
+    return {
+      t: Date.now(),
+      type,
+      score: Math.round(retention * 100) / 100,
+      hash: hashContent(entry.text),
+      summary: entry.text.slice(0, 200).replace(/\n/g, ' '),
+      tokens: entry.tokens,
+    };
+  });
+  
+  const stats = {
+    total: scored.length,
+    sparse: scored.filter(e => e.score < sparseThreshold).length,
+    compressed: scored.filter(e => e.score >= sparseThreshold && e.score < compressThreshold).length,
+    kept: scored.filter(e => e.score >= compressThreshold).length,
+    totalTokens: scored.reduce((sum, e) => sum + e.tokens, 0),
+  };
+  
+  console.log('');
+  logSuccess(`${stats.total} entries scored`);
+  log(`     → ${stats.sparse} sparse (score < ${sparseThreshold})`, COLORS.dim);
+  log(`     → ${stats.compressed} compressed (${sparseThreshold} ≤ score < ${compressThreshold})`, COLORS.dim);
+  log(`     → ${stats.kept} kept (score ≥ ${compressThreshold})`, COLORS.dim);
+  log(`     → ${stats.totalTokens} total tokens`, COLORS.dim);
+  
+  // Write output
+  const outputPath = resolvedPath.replace(/\.md$/, '.scores.json');
+  const output = {
+    generated: new Date().toISOString(),
+    source: filePath,
+    agent: process.env.AGENT_ID || 'unknown',
+    config: { sparseThreshold, compressThreshold },
+    stats,
+    items: scored,
+  };
+  
+  writeFileSync(outputPath, JSON.stringify(output, null, 2));
+  console.log('');
+  logSuccess(`Scores written to: ${outputPath}`);
+  console.log('');
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const command = args[0] || 'init';
@@ -258,6 +418,14 @@ async function main() {
     case 'status':
       await status();
       break;
+    case 'score':
+      if (!args[1]) {
+        logError('Missing file path');
+        console.log('Usage: npx hippocampus-md score <memory-file.md>');
+        process.exit(1);
+      }
+      await score(args[1]);
+      break;
     case 'help':
     case '--help':
     case '-h':
@@ -265,9 +433,14 @@ async function main() {
 🧠 hippocampus.md - Context Lifecycle Extension
 
 Usage:
-  npx hippocampus-md init     Install extension (auto-detects Pi/OpenClaw/Clawdbot)
-  npx hippocampus-md status   Check installation status
-  npx hippocampus-md help     Show this help
+  npx hippocampus-md init              Install extension (auto-detects Pi/OpenClaw)
+  npx hippocampus-md status            Check installation status
+  npx hippocampus-md score <file.md>   Score a memory file
+  npx hippocampus-md help              Show this help
+
+Examples:
+  npx hippocampus-md score memory/2026-02-03.md
+  npx hippocampus-md score ~/clawd/memory/today.md
 
 Supported platforms:
   • Pi (~/.pi/)
